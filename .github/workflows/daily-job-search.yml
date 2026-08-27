@@ -1,0 +1,38 @@
+name: Daily job search
+
+on:
+  schedule:
+    # 06:00 UTC every day (~08:00-09:00 Israel time, depending on DST).
+    # Scheduled workflows only fire on the repository's default branch.
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run job search agent
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m job_agent.main
+
+      - name: Persist dedup history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/sent_vacancies.json
+          git diff --cached --quiet || git commit -m "chore: update sent vacancies history [skip ci]"
+          git push
