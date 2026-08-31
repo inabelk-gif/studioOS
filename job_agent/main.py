@@ -15,7 +15,6 @@ from typing import Dict, List
 
 from job_agent import dedup
 from job_agent.config import (
-    ALLOWED_LOCATION_KEYWORDS,
     EXCLUDE_KEYWORDS,
     REMOTE_EXCLUDE_KEYWORDS,
     SEARCH_QUERIES,
