@@ -33,18 +33,21 @@ logger = logging.getLogger("job_agent")
 
 
 def _is_allowed_location(location: str) -> bool:
+    """Accept locations returned by LinkedIn's radius search,
+    while excluding remote-only jobs.
+    """
     if not location:
         return False
 
     location_lower = location.lower()
 
-    if any(bad in location_lower for bad in REMOTE_EXCLUDE_KEYWORDS):
+    if any(
+        bad.lower() in location_lower
+        for bad in REMOTE_EXCLUDE_KEYWORDS
+    ):
         return False
 
-    return any(
-        kw.lower() in location_lower
-        for kw in ALLOWED_LOCATION_KEYWORDS
-    )
+    return True
 
 
 def _is_excluded_vacancy(vacancy: Vacancy) -> bool:
