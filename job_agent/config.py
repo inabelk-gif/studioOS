@@ -3,6 +3,7 @@
 Nothing sensitive lives here. TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are
 read from environment variables (see .env.example / README.md).
 """
+
 import os
 from pathlib import Path
 
@@ -20,11 +21,15 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 # How many days back a vacancy is still considered "new".
 DAYS_BACK = 7
 
-# How long dedup history is kept (avoids the file growing forever).
+# How long dedup history is kept.
 DEDUP_RETENTION_DAYS = 60
 
-# (search query in English, search query in Hebrew, relevance weight)
-# Weight is used later for ranking results.
+# LinkedIn distance is specified in miles.
+# 50 miles is approximately 80 km from Jerusalem.
+LINKEDIN_DISTANCE_MILES = 50
+
+# Search queries:
+# (English query, Hebrew query, relevance weight)
 SEARCH_QUERIES = [
     ("Senior Graphic Designer", "מעצב גרפי בכיר", 10),
     ("Graphic Designer", "מעצב גרפי", 9),
@@ -34,15 +39,16 @@ SEARCH_QUERIES = [
     ("UI Designer", "מעצב UI", 8),
     ("UI/UX Designer", "מעצב UX/UI", 8),
     ("Product Designer", "מעצב מוצר", 5),
+    ("Art Director", "ארט דירקטור", 9),
+    ("Graphic Designer", "מעצב/ת גרפית", 9),
 ]
 
-# Base LinkedIn location string. LinkedIn applies its own ~40km default
-# radius around this, which covers the "Jerusalem + 30km" requirement well
-# enough; ALLOWED_LOCATION_KEYWORDS below is the real, authoritative filter.
+# Base LinkedIn location.
 LINKEDIN_LOCATION = "Jerusalem, Israel"
 
-# Jerusalem and everything within roughly 30km of it, in English and Hebrew.
-# A vacancy is only kept if its location text matches one of these.
+# Additional location filter.
+# LinkedIn performs the main radius search; this list provides an
+# additional safety filter for clearly identified nearby locations.
 ALLOWED_LOCATION_KEYWORDS = [
     "jerusalem", "ירושלים",
     "mevaseret zion", "מבשרת ציון",
@@ -59,16 +65,28 @@ ALLOWED_LOCATION_KEYWORDS = [
     "mishor adumim", "מישור אדומים",
 ]
 
-# Terms that mark a listing as fully remote. Even if a remote listing
-# happens to mention an allowed city, it's still excluded per the
-# "no remote work" requirement.
-REMOTE_EXCLUDE_KEYWORDS = [
-    "remote", "work from home", "wfh", "anywhere",
-    "עבודה מהבית", "עבודה מרחוק", "מרחוק",
+# Job-title/content terms that should exclude a vacancy.
+EXCLUDE_KEYWORDS = [
+    "גרפיקאי/ת",
+    "גרפיקאי.ת",
+    "דפוס",
+    "junior",
+    "mid-level",
+    "mid level",
 ]
 
-# Tools/skills surfaced in the "why it matches" explanation when found in
-# the title or description.
+# Fully remote listings are excluded.
+REMOTE_EXCLUDE_KEYWORDS = [
+    "remote",
+    "work from home",
+    "wfh",
+    "anywhere",
+    "עבודה מהבית",
+    "עבודה מרחוק",
+    "מרחוק",
+]
+
+# Tools/skills used in the "why it matches" explanation.
 RELEVANT_SKILLS = [
     "Figma", "Adobe", "Photoshop", "Illustrator", "InDesign", "Sketch",
     "XD", "Branding", "Brand Identity", "UI", "UX", "Typography",
