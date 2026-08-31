@@ -1,20 +1,13 @@
-"""Entry point: run one full daily job-search cycle.
-
-1. Query every registered source for every search term.
-2. Filter by allowed location and exclude remote-only listings.
-3. Exclude unwanted job titles/content.
-4. Drop vacancies already sent on a previous run.
-5. Score and rank what's left.
-6. Send the report to Telegram.
-7. Persist the updated "already sent" history.
-"""
+"""Entry point for the daily job-search agent."""
 
 import logging
 import time
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from job_agent import dedup
 from job_agent.config import (
+    ALLOWED_LOCATION_KEYWORDS,
+    EXCLUDED_LOCATION_KEYWORDS,
     EXCLUDE_KEYWORDS,
     REMOTE_EXCLUDE_KEYWORDS,
     SEARCH_QUERIES,
@@ -24,52 +17,56 @@ from job_agent.ranking import rank, score_and_explain
 from job_agent.sources import ALL_SOURCES
 from job_agent.telegram_notifier import send_report
 
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
 )
+
 logger = logging.getLogger("job_agent")
 
 
-def _is_allowed_location(location: str) -> bool:
-    """Accept locations returned by LinkedIn's radius search,
-    while excluding remote-only jobs.
-    """
+def _is_remote(location: str) -> bool:
+    location_lower = location.lower()
+
+    return any(
+        keyword.lower() in location_lower
+        for keyword in REMOTE_EXCLUDE_KEYWORDS
+    )
+
+
+def _is_nearby_location(location: str) -> bool:
+    """Check whether the location belongs to the Jerusalem target area."""
+
     if not location:
         return False
 
     location_lower = location.lower()
 
+    if _is_remote(location):
+        return False
+
     if any(
-        bad.lower() in location_lower
-        for bad in REMOTE_EXCLUDE_KEYWORDS
+        keyword.lower() in location_lower
+        for keyword in EXCLUDED_LOCATION_KEYWORDS
     ):
         return False
 
-    return True
+    return any(
+        keyword.lower() in location_lower
+        for keyword in ALLOWED_LOCATION_KEYWORDS
+    )
 
 
 def _is_excluded_vacancy(vacancy: Vacancy) -> bool:
-    """Exclude unwanted job titles and listings."""
+    """Exclude clearly unwanted job titles."""
 
     title_lower = vacancy.title.lower()
-    description_lower = vacancy.description.lower()
 
-    # For title-related exclusions, check the title.
-    # For "דפוס", also check the description when available.
-    if any(
+    return any(
         keyword.lower() in title_lower
         for keyword in EXCLUDE_KEYWORDS
-    ):
-        return True
-
-    if any(
-        keyword.lower() in description_lower
-        for keyword in ["דפוס"]
-    ):
-        return True
-
-    return False
+    )
 
 
 def collect_vacancies() -> List[Vacancy]:
@@ -77,7 +74,9 @@ def collect_vacancies() -> List[Vacancy]:
 
     for source in ALL_SOURCES:
         for query_en, query_he, weight in SEARCH_QUERIES:
+
             for query in (query_en, query_he):
+
                 logger.info(
                     "Querying %s for %r",
                     source.name,
@@ -86,6 +85,7 @@ def collect_vacancies() -> List[Vacancy]:
 
                 try:
                     results = source.fetch(query)
+
                 except Exception:
                     logger.exception(
                         "Source %s failed for query %r",
@@ -95,11 +95,7 @@ def collect_vacancies() -> List[Vacancy]:
                     results = []
 
                 for vacancy in results:
-                    # Location filter
-                    if not _is_allowed_location(vacancy.location):
-                        continue
 
-                    # Unwanted job filter
                     if _is_excluded_vacancy(vacancy):
                         logger.info(
                             "Excluded vacancy: %s",
@@ -107,12 +103,18 @@ def collect_vacancies() -> List[Vacancy]:
                         )
                         continue
 
-                    existing = seen_in_run.get(vacancy.dedup_key)
+                    if _is_remote(vacancy.location):
+                        continue
+
+                    existing = seen_in_run.get(
+                        vacancy.dedup_key
+                    )
 
                     if existing and existing.score >= weight:
                         continue
 
-                    vacancy.matched_query = query_en
+                    # Store the actual query that produced the result.
+                    vacancy.matched_query = query
 
                     score_and_explain(
                         vacancy,
@@ -126,28 +128,56 @@ def collect_vacancies() -> List[Vacancy]:
     return list(seen_in_run.values())
 
 
+def split_by_location(
+    vacancies: List[Vacancy],
+) -> Tuple[List[Vacancy], List[Vacancy]]:
+    """Split relevant vacancies into nearby and other locations."""
+
+    nearby: List[Vacancy] = []
+    other: List[Vacancy] = []
+
+    for vacancy in vacancies:
+
+        if _is_nearby_location(vacancy.location):
+            nearby.append(vacancy)
+        else:
+            other.append(vacancy)
+
+    return nearby, other
+
+
 def main() -> None:
+
     sent = dedup.load_sent()
 
     all_vacancies = collect_vacancies()
+
     new_vacancies = dedup.filter_new(
         all_vacancies,
         sent,
     )
+
     ranked = rank(new_vacancies)
 
+    nearby, other = split_by_location(ranked)
+
     logger.info(
-        "Found %d vacancies total, %d new after dedup",
-        len(all_vacancies),
+        "Found %d vacancies total: %d nearby, %d other locations",
         len(ranked),
+        len(nearby),
+        len(other),
     )
 
-    send_report(ranked)
+    send_report(
+        nearby,
+        other,
+    )
 
     updated_sent = dedup.mark_sent(
         ranked,
         sent,
     )
+
     dedup.save_sent(updated_sent)
 
 
