@@ -1,4 +1,4 @@
-"""Scoring and 'why it matches' explanations for found vacancies."""
+"""Scoring and 'why it matches' explanations."""
 
 from datetime import datetime, timezone
 from typing import List
@@ -9,6 +9,7 @@ from job_agent.models import Vacancy
 
 def _matched_skills(text: str) -> List[str]:
     text_lower = text.lower()
+
     return [
         skill
         for skill in RELEVANT_SKILLS
@@ -18,17 +19,25 @@ def _matched_skills(text: str) -> List[str]:
 
 def _is_jerusalem(location: str) -> bool:
     location_lower = location.lower()
-    return "jerusalem" in location_lower or "ירושלים" in location_lower
+
+    return (
+        "jerusalem" in location_lower
+        or "ירושלים" in location_lower
+    )
 
 
-def _days_since_published(published_at: str) -> float:
+def _days_since_published(
+    published_at: str,
+) -> float:
+
     try:
         published = datetime.fromisoformat(
             published_at
         ).replace(tzinfo=timezone.utc)
 
         return (
-            datetime.now(timezone.utc) - published
+            datetime.now(timezone.utc)
+            - published
         ).total_seconds() / 86400
 
     except (TypeError, ValueError):
@@ -39,12 +48,14 @@ def score_and_explain(
     vacancy: Vacancy,
     query_weight: float,
 ) -> Vacancy:
+
     score = query_weight
 
     if _is_jerusalem(vacancy.location):
         score += 3
 
     if vacancy.published_at:
+
         age_days = _days_since_published(
             vacancy.published_at
         )
@@ -64,23 +75,26 @@ def score_and_explain(
     vacancy.score = score
 
     reasons = [
-        f"Позиция найдена по запросу «{vacancy.matched_query}» "
+        f"Позиция найдена по запросу "
+        f"«{vacancy.matched_query}» "
         f"и соответствует вашему профессиональному профилю."
     ]
 
     if skills:
         reasons.append(
-            "Упоминаются релевантные навыки/инструменты: "
+            "Упоминаются релевантные "
+            "навыки/инструменты: "
             + ", ".join(skills)
             + "."
         )
 
     if _is_jerusalem(vacancy.location):
-        reasons.append("Расположение — Иерусалим.")
+        reasons.append(
+            "Расположение — Иерусалим."
+        )
     elif vacancy.location:
         reasons.append(
-            f"Расположение: {vacancy.location} "
-            f"(в пределах заданного радиуса поиска)."
+            f"Расположение: {vacancy.location}."
         )
 
     vacancy.why_matches = " ".join(reasons)
@@ -88,9 +102,12 @@ def score_and_explain(
     return vacancy
 
 
-def rank(vacancies: List[Vacancy]) -> List[Vacancy]:
+def rank(
+    vacancies: List[Vacancy],
+) -> List[Vacancy]:
+
     return sorted(
         vacancies,
-        key=lambda v: v.score,
+        key=lambda vacancy: vacancy.score,
         reverse=True,
     )
