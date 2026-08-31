@@ -18,10 +18,11 @@ DAYS_BACK = 7
 DEDUP_RETENTION_DAYS = 60
 
 # LinkedIn uses miles for its radius parameter.
-# 50 miles is approximately 80 km.
+# 50 miles ≈ 80 km.
 LINKEDIN_DISTANCE_MILES = 50
 
 LINKEDIN_LOCATION = "Jerusalem, Israel"
+
 
 # Search queries:
 # (English query, Hebrew query, relevance weight)
@@ -38,7 +39,63 @@ SEARCH_QUERIES = [
     ("Graphic Designer", "מעצב/ת גרפית", 9),
 ]
 
-# These terms exclude unwanted vacancies.
+
+# A vacancy must contain at least one of these professional
+# terms in its TITLE to be considered relevant.
+RELEVANT_JOB_TITLE_KEYWORDS = [
+    # Graphic / visual
+    "graphic designer",
+    "senior graphic designer",
+    "visual designer",
+    "senior visual designer",
+    "brand designer",
+    "senior brand designer",
+    "marketing designer",
+    "senior marketing designer",
+    "creative designer",
+    "senior creative designer",
+    "digital designer",
+    "senior digital designer",
+    "communication designer",
+    "content designer",
+    "motion designer",
+    "exhibition designer",
+
+    # UI / UX / Product
+    "ui designer",
+    "ux designer",
+    "ux/ui designer",
+    "ui/ux designer",
+    "product designer",
+    "senior product designer",
+
+    # Art direction
+    "art director",
+    "creative director",
+
+    # Hebrew
+    "מעצב גרפי",
+    "מעצבת גרפית",
+    "מעצב/ת גרפית",
+    "מעצב ויזואלי",
+    "מעצבת ויזואלית",
+    "מעצב מותג",
+    "מעצבת מותג",
+    "מעצב שיווקי",
+    "מעצבת שיווקית",
+    "מעצב ui",
+    "מעצבת ui",
+    "מעצב ux",
+    "מעצבת ux",
+    "מעצב מוצר",
+    "מעצבת מוצר",
+    "ארט דירקטור",
+    "ארט דיירקטור",
+]
+
+
+# Explicitly unwanted terms.
+# These are checked in the vacancy title.
 EXCLUDE_KEYWORDS = [
     "גרפיקאי/ת",
     "גרפיקאי.ת",
@@ -52,7 +109,7 @@ EXCLUDE_KEYWORDS = [
     "מיד לבל",
 ]
 
-# Fully remote listings are excluded.
+
 REMOTE_EXCLUDE_KEYWORDS = [
     "remote",
     "work from home",
@@ -63,79 +120,69 @@ REMOTE_EXCLUDE_KEYWORDS = [
     "מרחוק",
 ]
 
-# Cities/areas that are acceptable within the intended
-# Jerusalem-centered search area.
+
+# Locations that we consider part of the Jerusalem-centered
+# preferred area.
 #
-# Tel Aviv metro is deliberately excluded even though parts of
-# it can fall within a 65 km straight-line radius.
+# Shoham is intentionally included.
 ALLOWED_LOCATION_KEYWORDS = [
-    # Jerusalem
     "jerusalem",
     "ירושלים",
 
-    # East / west Jerusalem area
     "maale adumim",
     "ma'ale adumim",
     "מעלה אדומים",
+
     "mevaseret zion",
     "מבשרת ציון",
-    "abu ghosh",
-    "אבו גוש",
-    "har adar",
-    "הר אדר",
-    "givat zeev",
-    "גבעת זאב",
-    "beitar illit",
-    "beitar illit",
-    "ביתר עילית",
-    "tzur hadassah",
-    "צור הדסה",
 
-    # Judea / Jerusalem district
     "beit shemesh",
     "בית שמש",
-    "efrat",
-    "אפרת",
-    "gush etzion",
-    "גוש עציון",
-    "alon shvut",
-    "אלון שבות",
-    "mateh yehuda",
-    "מטה יהודה",
 
-    # North-west / west of Jerusalem
     "modiin",
     "modi'in",
     "modi'in-maccabim-reut",
     "modiin-maccabim-reut",
     "מודיעין",
     "מודיעין-מכבים-רעות",
-    "maccabim",
-    "מכבים",
 
-    # Central locations that can reasonably fall within the
-    # broader search area
-    "ramla",
-    "רמלה",
-    "lod",
-    "לוד",
-    "rehovot",
-    "רחובות",
-    "yavne",
-    "יבנה",
-    "ashdod",
-    "אשדוד",
-    "kiryat malakhi",
-    "קריית מלאכי",
+    "gush etzion",
+    "גוש עציון",
+    "alon shvut",
+    "אלון שבות",
 
-    # North / north-east of Jerusalem
-    "beit shean",
-    "בית שאן",
-    "ariel",
-    "אריאל",
+    "efrat",
+    "אפרת",
+
+    "beitar illit",
+    "ביתר עילית",
+
+    "givat zeev",
+    "גבעת זאב",
+
+    "tzur hadassah",
+    "צור הדסה",
+
+    "abu ghosh",
+    "אבו גוש",
+
+    "har adar",
+    "הר אדר",
+
+    "mateh yehuda",
+    "מטה יהודה",
+
+    "mishor adumim",
+    "מישור אדומים",
+
+    "shoham",
+    "שהם",
 ]
 
-# Explicitly excluded metropolitan areas.
+
+# These are definitely outside the preferred area.
+# They are NOT discarded; relevant vacancies from these locations
+# go into the second Telegram section.
 EXCLUDED_LOCATION_KEYWORDS = [
     "tel aviv",
     "tel-aviv",
@@ -144,33 +191,47 @@ EXCLUDED_LOCATION_KEYWORDS = [
     "תל אביב",
     "yafo",
     "יפו",
+
     "bnei brak",
     "בני ברק",
+
     "ramat gan",
     "רמת גן",
+
     "givatayim",
     "גבעתיים",
+
     "herzliya",
     "הרצליה",
+
     "petah tikva",
     "פתח תקווה",
+
     "kfar saba",
     "כפר סבא",
+
     "ra'anana",
     "רעננה",
+
     "hod hasharon",
     "הוד השרון",
+
     "rishon lezion",
     "ראשון לציון",
+
     "holon",
     "חולון",
+
     "bat yam",
     "בת ים",
+
     "netanya",
     "נתניה",
+
     "haifa",
     "חיפה",
 ]
+
 
 RELEVANT_SKILLS = [
     "Figma",
@@ -190,6 +251,7 @@ RELEVANT_SKILLS = [
     "Print",
     "Packaging",
 ]
+
 
 REQUEST_HEADERS = {
     "User-Agent": (
