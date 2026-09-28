@@ -1,5 +1,6 @@
 """Telegram report formatting and Bot API client."""
 
+from html import escape
 from typing import List
 
 import requests
@@ -21,12 +22,13 @@ def _format_vacancy(
 ) -> str:
 
     location = vacancy.location or "не указано"
+    source = f" ({vacancy.source})" if vacancy.source else ""
 
     lines = [
-        f"<b>{index}. {vacancy.title} — {vacancy.company}</b>",
-        f"📍 {location}",
-        f"⭐ Почему подходит: {vacancy.why_matches}",
-        f"🔗 <a href=\"{vacancy.url}\">Ссылка на вакансию</a>",
+        f"<b>{index}. {escape(vacancy.title)} — {escape(vacancy.company)}</b>",
+        f"📍 {escape(location)}",
+        f"⭐ Почему подходит: {escape(vacancy.why_matches)}",
+        f"🔗 <a href=\"{escape(vacancy.url)}\">Ссылка на вакансию</a>{escape(source)}",
     ]
 
     return "\n".join(lines)

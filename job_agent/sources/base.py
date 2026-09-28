@@ -13,6 +13,10 @@ class JobSource(ABC):
 
     name: str = "unknown"
 
+    # True for boards that search all of Israel (no radius filter); their
+    # results are limited to the Jerusalem area + EXCLUDED_LOCATION_KEYWORDS.
+    nationwide: bool = False
+
     @abstractmethod
     def fetch(self, query: str) -> List[Vacancy]:
         """Returns vacancies matching `query`. Should not raise on network

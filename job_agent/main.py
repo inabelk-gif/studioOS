@@ -1,6 +1,7 @@
 """Entry point for the daily job-search agent."""
 
 import logging
+import re
 import time
 from typing import Dict, List, Tuple
 
@@ -27,11 +28,23 @@ logging.basicConfig(
 logger = logging.getLogger("job_agent")
 
 
+# Hebrew job titles mark both genders in many ways: "מעצב/ת", "מעצב /ת",
+# "מעצב.ת", "מעצב\ת", "גרפי/ת". Strip the suffix so keywords match all.
+_GENDER_SUFFIX_RE = re.compile(
+    r"\s*[/.\\]\s*(?:ית|ת|ה)(?![֐-׿])"
+)
+
+
+def _normalize(text: str) -> str:
+    text = _GENDER_SUFFIX_RE.sub("", text.lower())
+    return re.sub(r"\s+", " ", text)
+
+
 def _contains_keyword(text: str, keywords: List[str]) -> bool:
-    text_lower = text.lower()
+    text_norm = _normalize(text)
 
     return any(
-        keyword.lower() in text_lower
+        _normalize(keyword) in text_norm
         for keyword in keywords
     )
 
@@ -79,22 +92,43 @@ def _is_nearby_location(location: str) -> bool:
     if _is_remote(location):
         return False
 
-    if _contains_keyword(
-        location_lower,
-        EXCLUDED_LOCATION_KEYWORDS,
-    ):
-        return False
-
+    # Israeli boards list several cities per job ("ירושלים, מודיעין,
+    # תל אביב"); any preferred city makes the job count as nearby.
     return _contains_keyword(
         location_lower,
         ALLOWED_LOCATION_KEYWORDS,
     )
 
 
+def _is_in_search_area(location: str) -> bool:
+    """For nationwide boards: keep the Jerusalem area and the cities
+    listed for the second report section; drop the rest of Israel.
+    Jobs without a location are kept."""
+
+    if not location:
+        return True
+
+    return _contains_keyword(
+        location,
+        ALLOWED_LOCATION_KEYWORDS + EXCLUDED_LOCATION_KEYWORDS,
+    )
+
+
+def _content_key(vacancy: Vacancy) -> str:
+    """The same job is often posted twice, or on several boards."""
+
+    return "|".join(
+        _normalize(part)
+        for part in (vacancy.title, vacancy.company, vacancy.location)
+    )
+
+
 def collect_vacancies() -> List[Vacancy]:
     seen_in_run: Dict[str, Vacancy] = {}
+    seen_content: Dict[str, str] = {}
 
     for source in ALL_SOURCES:
+        found_before = len(seen_in_run)
 
         for query_en, query_he, weight in SEARCH_QUERIES:
 
@@ -136,6 +170,27 @@ def collect_vacancies() -> List[Vacancy]:
                         )
                         continue
 
+                    if source.nationwide and not _is_in_search_area(
+                        vacancy.location
+                    ):
+                        logger.info(
+                            "Excluded far-away vacancy: %s (%s)",
+                            vacancy.title,
+                            vacancy.location,
+                        )
+                        continue
+
+                    content_key = _content_key(vacancy)
+                    first_key = seen_content.setdefault(
+                        content_key,
+                        vacancy.dedup_key,
+                    )
+
+                    # Same title/company/location already found
+                    # under a different id or on another board.
+                    if first_key != vacancy.dedup_key:
+                        continue
+
                     existing = seen_in_run.get(
                         vacancy.dedup_key
                     )
@@ -158,6 +213,12 @@ def collect_vacancies() -> List[Vacancy]:
                     ] = vacancy
 
                 time.sleep(1)
+
+        logger.info(
+            "%s: %d relevant vacancies",
+            source.name,
+            len(seen_in_run) - found_before,
+        )
 
     return list(seen_in_run.values())
 
