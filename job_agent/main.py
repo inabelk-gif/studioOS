@@ -6,6 +6,7 @@ import time
 from typing import Dict, List, Tuple
 
 from job_agent import dedup
+from job_agent.company_watch import fetch_company_sites, watched_company
 from job_agent.config import (
     ALLOWED_LOCATION_KEYWORDS,
     EXCLUDED_LOCATION_KEYWORDS,
@@ -26,6 +27,9 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger("job_agent")
+
+# Same weight as the strongest search queries (see SEARCH_QUERIES).
+COMPANY_SITE_WEIGHT = 9
 
 
 # Hebrew job titles mark both genders in many ways: "מעצב/ת", "מעצב /ת",
@@ -123,9 +127,100 @@ def _content_key(vacancy: Vacancy) -> str:
     )
 
 
+def _accept(
+    vacancy: Vacancy,
+    weight: float,
+    query: str,
+    nationwide: bool,
+    seen_in_run: Dict[str, Vacancy],
+    seen_content: Dict[str, str],
+) -> None:
+    """Filter, score and store one candidate vacancy."""
+
+    # Ignore anything that is not actually
+    # a design-related position.
+    if not _is_relevant_job(vacancy):
+        logger.info(
+            "Excluded irrelevant vacancy: %s",
+            vacancy.title,
+        )
+        return
+
+    # Remote-only positions are excluded.
+    if _is_remote(vacancy.location):
+        logger.info(
+            "Excluded remote vacancy: %s",
+            vacancy.title,
+        )
+        return
+
+    if nationwide and not _is_in_search_area(
+        vacancy.location
+    ):
+        logger.info(
+            "Excluded far-away vacancy: %s (%s)",
+            vacancy.title,
+            vacancy.location,
+        )
+        return
+
+    content_key = _content_key(vacancy)
+    first_key = seen_content.setdefault(
+        content_key,
+        vacancy.dedup_key,
+    )
+
+    # Same title/company/location already found
+    # under a different id or on another board.
+    if first_key != vacancy.dedup_key:
+        return
+
+    existing = seen_in_run.get(
+        vacancy.dedup_key
+    )
+
+    # If we already found the same vacancy through
+    # a stronger query, keep that version.
+    if existing and existing.score >= weight:
+        return
+
+    # Store the actual query that produced this result.
+    vacancy.matched_query = query
+
+    company = watched_company(vacancy.company)
+    if company:
+        vacancy.watched_company = company.name
+
+    score_and_explain(
+        vacancy,
+        weight,
+    )
+
+    seen_in_run[
+        vacancy.dedup_key
+    ] = vacancy
+
+
 def collect_vacancies() -> List[Vacancy]:
     seen_in_run: Dict[str, Vacancy] = {}
     seen_content: Dict[str, str] = {}
+
+    # Companies' own careers sites first, so that a job also posted on
+    # a board is reported with the company's own link.
+    for vacancy in fetch_company_sites():
+        _accept(
+            vacancy,
+            COMPANY_SITE_WEIGHT,
+            "",
+            False,
+            seen_in_run,
+            seen_content,
+        )
+
+    logger.info(
+        "Company sites: %d relevant vacancies",
+        len(seen_in_run),
+    )
 
     for source in ALL_SOURCES:
         found_before = len(seen_in_run)
@@ -152,65 +247,14 @@ def collect_vacancies() -> List[Vacancy]:
                     results = []
 
                 for vacancy in results:
-
-                    # Ignore anything that is not actually
-                    # a design-related position.
-                    if not _is_relevant_job(vacancy):
-                        logger.info(
-                            "Excluded irrelevant vacancy: %s",
-                            vacancy.title,
-                        )
-                        continue
-
-                    # Remote-only positions are excluded.
-                    if _is_remote(vacancy.location):
-                        logger.info(
-                            "Excluded remote vacancy: %s",
-                            vacancy.title,
-                        )
-                        continue
-
-                    if source.nationwide and not _is_in_search_area(
-                        vacancy.location
-                    ):
-                        logger.info(
-                            "Excluded far-away vacancy: %s (%s)",
-                            vacancy.title,
-                            vacancy.location,
-                        )
-                        continue
-
-                    content_key = _content_key(vacancy)
-                    first_key = seen_content.setdefault(
-                        content_key,
-                        vacancy.dedup_key,
-                    )
-
-                    # Same title/company/location already found
-                    # under a different id or on another board.
-                    if first_key != vacancy.dedup_key:
-                        continue
-
-                    existing = seen_in_run.get(
-                        vacancy.dedup_key
-                    )
-
-                    # If we already found the same vacancy through
-                    # a stronger query, keep that version.
-                    if existing and existing.score >= weight:
-                        continue
-
-                    # Store the actual query that produced this result.
-                    vacancy.matched_query = query
-
-                    score_and_explain(
+                    _accept(
                         vacancy,
                         weight,
+                        query,
+                        source.nationwide,
+                        seen_in_run,
+                        seen_content,
                     )
-
-                    seen_in_run[
-                        vacancy.dedup_key
-                    ] = vacancy
 
                 time.sleep(1)
 
@@ -225,22 +269,25 @@ def collect_vacancies() -> List[Vacancy]:
 
 def split_by_location(
     vacancies: List[Vacancy],
-) -> Tuple[List[Vacancy], List[Vacancy]]:
-    """Put nearby vacancies first and other locations second."""
+) -> Tuple[List[Vacancy], List[Vacancy], List[Vacancy]]:
+    """Watched companies first, then nearby, then other locations."""
 
+    watched: List[Vacancy] = []
     nearby: List[Vacancy] = []
     other: List[Vacancy] = []
 
     for vacancy in vacancies:
 
-        if _is_nearby_location(
+        if vacancy.watched_company:
+            watched.append(vacancy)
+        elif _is_nearby_location(
             vacancy.location
         ):
             nearby.append(vacancy)
         else:
             other.append(vacancy)
 
-    return nearby, other
+    return watched, nearby, other
 
 
 def main() -> None:
@@ -258,14 +305,15 @@ def main() -> None:
         new_vacancies
     )
 
-    nearby, other = split_by_location(
+    watched, nearby, other = split_by_location(
         ranked
     )
 
     logger.info(
-        "Found %d relevant vacancies: "
+        "Found %d relevant vacancies: %d from watched companies, "
         "%d nearby, %d other locations",
         len(ranked),
+        len(watched),
         len(nearby),
         len(other),
     )
@@ -273,6 +321,7 @@ def main() -> None:
     send_report(
         nearby,
         other,
+        watched,
     )
 
     updated_sent = dedup.mark_sent(

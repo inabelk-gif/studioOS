@@ -1,7 +1,7 @@
 """Telegram report formatting and Bot API client."""
 
 from html import escape
-from typing import List
+from typing import List, Sequence
 
 import requests
 
@@ -37,10 +37,18 @@ def _format_vacancy(
 def build_report(
     nearby_vacancies: List[Vacancy],
     other_vacancies: List[Vacancy],
+    watched_vacancies: Sequence[Vacancy] = (),
 ) -> List[str]:
-    """Build Telegram messages with nearby jobs first."""
+    """Build Telegram messages: watched companies, then nearby jobs,
+    then other cities."""
 
-    total = len(nearby_vacancies) + len(other_vacancies)
+    sections = [
+        ("🏢 <b>КОМПАНИИ ИЗ ВАШЕГО СПИСКА</b>", list(watched_vacancies)),
+        ("🟢 <b>ИЕРУСАЛИМ И ОКРЕСТНОСТИ</b>", nearby_vacancies),
+        ("🟡 <b>РЕЛЕВАНТНЫЕ, НО ДРУГИЕ ГОРОДА</b>", other_vacancies),
+    ]
+
+    total = sum(len(vacancies) for _, vacancies in sections)
 
     if total == 0:
         return [
@@ -49,46 +57,22 @@ def build_report(
 
     chunks: List[str] = []
 
-    header = (
+    current = (
         f"📋 <b>Новые вакансии на сегодня: {total}</b>\n\n"
     )
 
-    current = header
+    index = 0
 
-    if nearby_vacancies:
-        current += (
-            "🟢 <b>ИЕРУСАЛИМ И ОКРЕСТНОСТИ</b>\n\n"
-        )
+    for heading, vacancies in sections:
 
-        for i, vacancy in enumerate(
-            nearby_vacancies,
-            start=1,
-        ):
-            entry = _format_vacancy(i, vacancy)
+        if not vacancies:
+            continue
 
-            if (
-                len(current)
-                + len(entry)
-                + 2
-                > MAX_MESSAGE_LENGTH
-            ):
-                chunks.append(current.strip())
-                current = ""
+        current += heading + "\n\n"
 
-            current += entry + "\n\n"
-
-    if other_vacancies:
-        current += (
-            "🟡 <b>РЕЛЕВАНТНЫЕ, НО ДРУГИЕ ГОРОДА</b>\n\n"
-        )
-
-        offset = len(nearby_vacancies)
-
-        for i, vacancy in enumerate(
-            other_vacancies,
-            start=offset + 1,
-        ):
-            entry = _format_vacancy(i, vacancy)
+        for vacancy in vacancies:
+            index += 1
+            entry = _format_vacancy(index, vacancy)
 
             if (
                 len(current)
@@ -137,10 +121,12 @@ def send_message(text: str) -> None:
 def send_report(
     nearby_vacancies: List[Vacancy],
     other_vacancies: List[Vacancy],
+    watched_vacancies: Sequence[Vacancy] = (),
 ) -> None:
 
     for chunk in build_report(
         nearby_vacancies,
         other_vacancies,
+        watched_vacancies,
     ):
         send_message(chunk)

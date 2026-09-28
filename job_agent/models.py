@@ -17,6 +17,8 @@ class Vacancy:
     # Site-specific job id, for boards whose job URLs live in the query
     # string (e.g. AllJobs ?JobID=...), where the URL key would collide.
     external_id: str = ""
+    # Name from job_agent/companies.py if the employer is on the watch-list.
+    watched_company: str = ""
 
     @property
     def dedup_key(self) -> str:

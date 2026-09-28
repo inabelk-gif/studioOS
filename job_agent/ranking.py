@@ -72,13 +72,27 @@ def score_and_explain(
     if skills:
         score += min(len(skills), 3)
 
+    if vacancy.watched_company:
+        score += 5
+
     vacancy.score = score
 
-    reasons = [
-        f"Позиция найдена по запросу "
-        f"«{vacancy.matched_query}» "
-        f"и соответствует вашему профессиональному профилю."
-    ]
+    if vacancy.matched_query:
+        reasons = [
+            f"Позиция найдена по запросу "
+            f"«{vacancy.matched_query}» "
+            f"и соответствует вашему профессиональному профилю."
+        ]
+    else:
+        reasons = [
+            "Новая дизайнерская позиция на сайте компании."
+        ]
+
+    if vacancy.watched_company:
+        reasons.insert(
+            0,
+            f"Компания из вашего списка ({vacancy.watched_company}).",
+        )
 
     if skills:
         reasons.append(
