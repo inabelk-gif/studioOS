@@ -57,18 +57,74 @@ def _fetch_greenhouse(company: Company, board: str) -> List[Vacancy]:
     response = requests.get(url, headers=REQUEST_HEADERS, timeout=30)
     response.raise_for_status()
 
-    return [
-        Vacancy(
-            title=job.get("title", ""),
-            company=company.name,
-            location=(job.get("location") or {}).get("name", ""),
-            url=job.get("absolute_url", ""),
-            published_at=job.get("updated_at"),
-            source=_source_name(company),
-            external_id=str(job.get("id", "")),
+    vacancies = []
+    for job in response.json().get("jobs", []):
+        location = (job.get("location") or {}).get("name", "")
+        if location and not _israel_only(location):
+            continue
+        vacancies.append(
+            Vacancy(
+                title=job.get("title", ""),
+                company=company.name,
+                location=location,
+                url=job.get("absolute_url", ""),
+                published_at=job.get("updated_at"),
+                source=_source_name(company),
+                external_id=str(job.get("id", "")),
+            )
         )
-        for job in response.json().get("jobs", [])
-    ]
+    return vacancies
+
+
+def _fetch_bamboohr(company: Company, account: str) -> List[Vacancy]:
+    url = f"https://{account}.bamboohr.com/careers/list"
+    response = requests.get(url, headers=REQUEST_HEADERS, timeout=30)
+    response.raise_for_status()
+
+    vacancies = []
+    for job in response.json().get("result", []):
+        place = job.get("location") or {}
+        location = ", ".join(p for p in (place.get("city"), place.get("state")) if p)
+        if location and not _israel_only(location):
+            continue
+        vacancies.append(
+            Vacancy(
+                title=job.get("jobOpeningName", ""),
+                company=company.name,
+                location=location,
+                url=f"https://{account}.bamboohr.com/careers/{job.get('id')}",
+                source=_source_name(company),
+                external_id=str(job.get("id", "")),
+            )
+        )
+    return vacancies
+
+
+def _fetch_sitemap(company: Company, sitemap_url: str, path: str) -> List[Vacancy]:
+    """Job pages like /career/senior-brand-designer-haifa: the title is
+    rebuilt from the last URL segment."""
+
+    response = requests.get(sitemap_url, headers=REQUEST_HEADERS, timeout=30)
+    response.raise_for_status()
+
+    vacancies = []
+    for url in re.findall(r"<loc>([^<]+)</loc>", response.text):
+        if path not in url:
+            continue
+        slug = url.rstrip("/").rsplit("/", 1)[-1]
+        words = slug.replace("-", " ")
+        location = "Haifa" if "haifa" in words else "ירושלים"
+        vacancies.append(
+            Vacancy(
+                title=words.title(),
+                company=company.name,
+                location=location,
+                url=url,
+                source=_source_name(company),
+                external_id=slug,
+            )
+        )
+    return vacancies
 
 
 def _fetch_workday(company: Company, host: str, tenant: str, site: str) -> List[Vacancy]:
@@ -154,6 +210,8 @@ _FETCHERS = {
     "lever": _fetch_lever,
     "greenhouse": _fetch_greenhouse,
     "workday": _fetch_workday,
+    "bamboohr": _fetch_bamboohr,
+    "sitemap": _fetch_sitemap,
     "page": _fetch_page,
 }
 

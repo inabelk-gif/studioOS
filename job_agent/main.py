@@ -278,7 +278,12 @@ def split_by_location(
 
     for vacancy in vacancies:
 
-        if vacancy.watched_company:
+        # Watched companies in other cities (e.g. Teva in Tel Aviv) stay
+        # in the normal sections; their reason still names the company.
+        if vacancy.watched_company and (
+            not vacancy.location
+            or _is_nearby_location(vacancy.location)
+        ):
             watched.append(vacancy)
         elif _is_nearby_location(
             vacancy.location
