@@ -83,9 +83,13 @@ def score_and_explain(
             f"«{vacancy.matched_query}» "
             f"и соответствует вашему профессиональному профилю."
         ]
-    else:
+    elif vacancy.source.startswith("сайт "):
         reasons = [
             "Новая дизайнерская позиция на сайте компании."
+        ]
+    else:
+        reasons = [
+            f"Найдена в разделе дизайнерских вакансий ({vacancy.source})."
         ]
 
     if vacancy.watched_company:

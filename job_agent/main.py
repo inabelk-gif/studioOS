@@ -18,6 +18,7 @@ from job_agent.config import (
 from job_agent.models import Vacancy
 from job_agent.ranking import rank, score_and_explain
 from job_agent.sources import ALL_SOURCES
+from job_agent.sources.listings import ALL_LISTINGS
 from job_agent.telegram_notifier import send_report
 
 
@@ -30,6 +31,8 @@ logger = logging.getLogger("job_agent")
 
 # Same weight as the strongest search queries (see SEARCH_QUERIES).
 COMPANY_SITE_WEIGHT = 9
+# Design-only listing pages (Drushim design category, Janglo).
+LISTING_WEIGHT = 8
 
 
 # Hebrew job titles mark both genders in many ways: "מעצב/ת", "מעצב /ת",
@@ -221,6 +224,30 @@ def collect_vacancies() -> List[Vacancy]:
         "Company sites: %d relevant vacancies",
         len(seen_in_run),
     )
+
+    for name, fetch in ALL_LISTINGS:
+        found_before = len(seen_in_run)
+        try:
+            results = fetch()
+        except Exception:
+            logger.exception("Listing %s failed", name)
+            results = []
+
+        for vacancy in results:
+            _accept(
+                vacancy,
+                LISTING_WEIGHT,
+                "",
+                True,
+                seen_in_run,
+                seen_content,
+            )
+
+        logger.info(
+            "%s: %d relevant vacancies",
+            name,
+            len(seen_in_run) - found_before,
+        )
 
     for source in ALL_SOURCES:
         found_before = len(seen_in_run)

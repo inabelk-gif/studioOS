@@ -11,7 +11,10 @@
   - LinkedIn Jobs (радиус ~80 км от Иерусалима);
   - Drushim (drushim.co.il);
   - AllJobs (alljobs.co.il) — подписка AllJobs для поиска не нужна;
-  - JobMaster (jobmaster.co.il).
+  - JobMaster (jobmaster.co.il);
+  - раздел «Дизайн» Drushim в радиусе 30 км от Иерусалима и раздел
+    Graphic design на Janglo (janglo.net) — эти страницы читаются один
+    раз за запуск, см. `job_agent/sources/listings.py`.
 
   Drushim, AllJobs и JobMaster ищут по всему Израилю, поэтому из их
   результатов остаются только города из `ALLOWED_LOCATION_KEYWORDS` и
