@@ -3,3 +3,8 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Facebook helper (local only)
+chrome_fb_profile/
+data/facebook_seen.json
+data/facebook_agent.log

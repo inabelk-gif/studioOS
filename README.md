@@ -120,3 +120,22 @@ python -m job_agent.main
 - Радиус "30 км от Иерусалима" реализован как список конкретных
   населённых пунктов в `ALLOWED_LOCATION_KEYWORDS` (`job_agent/config.py`)
   — при необходимости список легко расширить.
+
+## Помощник для групп Facebook (запускается на компьютере)
+
+`facebook_agent.py` открывает Google Chrome с отдельным профилем
+(`chrome_fb_profile/`, в git не попадает), просматривает свежие посты
+групп из `facebook_groups.txt` и присылает в тот же Telegram-бот посты,
+где ищут дизайнера. Уже присланные посты помнятся в
+`data/facebook_seen.json` (тоже только на компьютере).
+
+1. Один раз войти в Facebook: `python facebook_agent.py --login`,
+   войти в открывшемся окне и закрыть его.
+2. Добавить ссылки на группы в `facebook_groups.txt`.
+3. Проверка без отправки: `python facebook_agent.py --dry-run`.
+4. Обычный запуск: `python facebook_agent.py` (нужен файл `.env`
+   с `TELEGRAM_BOT_TOKEN` и `TELEGRAM_CHAT_ID`, см. `.env.example`).
+5. Ежедневный запуск: задача «Facebook job helper» в Планировщике
+   заданий Windows (каждый день в 10:00, если компьютер был выключен —
+   при следующем включении) запускает `run_facebook_agent.bat`.
+   Журнал запусков — `data/facebook_agent.log`.

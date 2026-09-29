@@ -1,0 +1,18 @@
+# Группы Facebook для помощника facebook_agent.py
+# Одна ссылка на строку, например:
+# https://www.facebook.com/groups/123456789
+# Строки, начинающиеся с #, не читаются.
+
+# Дизайн, UX/UI — по всему Израилю
+https://www.facebook.com/groups/Graphic.Designer.Israel/
+https://www.facebook.com/groups/graphic.designers.in.israel/
+https://www.facebook.com/groups/SGRAPHICDESIGNONLINE/
+https://www.facebook.com/groups/1595221374057822/   # דרושים חוויית משתמש UX UI PM
+https://www.facebook.com/groups/uxijobs/            # משרות חוויית משתמש
+
+# Работа в Иерусалиме
+https://www.facebook.com/groups/JobsInJerusalem/
+https://www.facebook.com/groups/hitech.jerusalem/
+https://www.facebook.com/groups/jobsJLM/
+https://www.facebook.com/groups/171474076860/       # דרושים משרות עבודות ירושלים והסביבה
+https://www.facebook.com/groups/845200752357548/    # דרושים עבודה בירושלים והסביבה
