@@ -146,6 +146,9 @@ ALLOWED_LOCATION_KEYWORDS = [
     "modi'in",
     "modi'in-maccabim-reut",
     "modiin-maccabim-reut",
+    "modi’in",
+    "modi-in",
+    "maccabim",
     "מודיעין",
     "מודיעין-מכבים-רעות",
 
