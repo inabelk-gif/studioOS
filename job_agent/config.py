@@ -140,7 +140,11 @@ ALLOWED_LOCATION_KEYWORDS = [
     "מבשרת ציון",
 
     "beit shemesh",
+    "beit-shemesh",
+    "bet shemesh",
+    "beth shemesh",
     "בית שמש",
+    "בית-שמש",
 
     "modiin",
     "modi'in",
