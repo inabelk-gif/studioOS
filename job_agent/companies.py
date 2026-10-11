@@ -41,14 +41,11 @@ WATCHED_COMPANIES: List[Company] = [
             ("workday", "cisco.wd5.myworkdayjobs.com", "cisco", "Cisco_Careers")),
     Company("RAD", ["RAD", "RAD Data Communications", "רד תקשורת"],
             ("page", "https://www.rad.com/career/")),
-    Company("Radware", ["Radware", "רדוור"]),
     Company("MalamTeam", ["MalamTeam", "Malam Team", "מלם תים", "מלם-תים"]),
     Company("Abra", ["Abra", "אברה"],
             ("page", "https://www.abra-it.com/career/")),
     Company("Ophir / MKS", ["Ophir", "MKS Instruments", "אופיר"]),
     Company("Ericom / Cradlepoint", ["Ericom", "Cradlepoint", "אריקום"]),
-    Company("AppLogic Networks (Sandvine)", ["AppLogic Networks", "Sandvine"],
-            ("page", "https://www.applogicnetworks.com/company/careers")),
     Company("Umoove", ["Umoove"]),
     # Talpiot
     Company("200Apps", ["200Apps", "200 Apps"],
@@ -56,11 +53,6 @@ WATCHED_COMPANIES: List[Company] = [
     Company("FatFish", ["FatFish", "Fat Fish", "פאטפיש"],
             ("page", "https://www.fatfish.co.il/join-us")),
     Company("Nevelis", ["Nevelis", "נבליס"]),  # site moved to nevelis.com
-    Company("ewave (Softwatch)", ["Softwatch", "ewave", "איוויב"]),
-    Company("Matrix", ["Matrix", "מטריקס"],
-            ("page", "https://www.matrix.co.il/jobs/")),
-    Company("Dexel Print", ["Dexel", "דקסל"]),
-    Company("Grafoprint", ["Grafoprint", "גרפופרינט"]),
     # Givat Shaul
     Company("Hometalk / Vernet", ["Hometalk", "Vernet", "Networx"]),
     Company("Koren Publishers", ["Koren", "Maggid", "קורן"]),
@@ -71,19 +63,13 @@ WATCHED_COMPANIES: List[Company] = [
     Company("Lightricks", ["Lightricks", "לייטריקס"],
             ("sitemap", "https://www.lightricks.com/sitemap.xml", "/career/")),
     Company("Yissum", ["Yissum", "יישום"]),
-    Company("Alpha Omega", ["Alpha Omega", "אלפא אומגה"],
-            ("page", "https://www.alphaomega-eng.com/Careers")),
-    Company("Compumat", ["Compumat", "קומפומט"]),
-    Company("Ajinomatrix", ["Ajinomatrix"]),
     # City centre, academia, government
-    Company("מערך הסייבר הלאומי", ["מערך הסייבר", "National Cyber Directorate"]),
     Company("LeverageIT (illuminea)", ["illuminea", "LeverageIT", "Leverage IT"],
             ("page", "https://leverage.it/careers/")),
     Company("Bagel Studio", ["Bagel Studio", "בייגל סטודיו"]),  # bagelstudio.co.il
     Company("Beyond Designs", ["Beyondesigns", "Beyond Designs"]),  # beyondesigns.net
     Company("Atreo", ["Atreo"]),
     Company("Goldfish Marketing", ["Goldfish Marketing"]),  # goldfishmarketing.co.il
-    Company("Dofinity", ["Dofinity", "דופיניטי"]),
     Company("Quickode", ["Quickode"]),
     Company("האוניברסיטה העברית", ["האוניברסיטה העברית", "Hebrew University", "HUJI"]),
     Company("בצלאל", ["בצלאל", "Bezalel"],
@@ -197,7 +183,6 @@ WATCHED_COMPANIES: List[Company] = [
     Company("חברת החשמל", ["חברת החשמל", "חברת חשמל", "Israel Electric"]),
     Company("Image College", ["מכללת אימג'", "מכללת אימג׳", "Image College"]),
     # Malha technology park
-    Company("IBM", ["IBM"]),
     Company("Freightos", ["Freightos", "פרייטוס"]),
     Company("Kaspersky", ["Kaspersky", "קספרסקי"]),
     Company("מקור ראשון", ["מקור ראשון", "Makor Rishon"]),
@@ -223,12 +208,10 @@ WATCHED_COMPANIES: List[Company] = [
     Company("Civan", ["Civan"]),
     Company("Atlas Sweets", ["Atlas Sweets", "אטלס מתוקים"]),
     Company("Microsoft", ["Microsoft", "מיקרוסופט"]),
-    Company("Nvidia", ["NVIDIA", "Nvidia", "אנבידיה"]),
     Company("OurCrowd", ["OurCrowd"]),
     Company("VinciWorks", ["VinciWorks"]),
     Company("Rapaport", ["Rapaport"]),
     Company("Visionary.ai", ["Visionary.ai", "Visionary AI"]),
-    Company("Sweetch", ["Sweetch"]),
     Company("Genetika+", ["Genetika"]),
     Company("יד שרה", ["יד שרה", "Yad Sarah"]),
     Company("ALYN", ["ALYN", "אלי\"ן", "אליין"]),
