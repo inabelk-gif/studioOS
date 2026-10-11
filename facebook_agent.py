@@ -293,8 +293,12 @@ def scan_group(page, url: str) -> tuple:
     return name or url, found
 
 
+# «שהם» — это и Шохам, и обычное слово «что они»; в тексте поста его не ищем.
+NEARBY_POST_KEYWORDS = [k for k in ALLOWED_LOCATION_KEYWORDS if k != "שהם"] + ["jlm"]
+
+
 def is_nearby(text: str) -> bool:
-    return _contains_keyword(text, ALLOWED_LOCATION_KEYWORDS + ["jlm"])
+    return _contains_keyword(text, NEARBY_POST_KEYWORDS)
 
 
 def build_messages(results: list) -> list:

@@ -180,6 +180,7 @@ ALLOWED_LOCATION_KEYWORDS = [
 
     "shoham",
     "שהם",
+    "שוהם",
 ]
 
 
